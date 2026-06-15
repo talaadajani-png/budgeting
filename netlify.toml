@@ -1,5 +1,7 @@
 [build]
   command = "npm run build"
+  # Must NOT be the repo root, or @netlify/plugin-nextjs rejects the deploy.
+  publish = ".next"
 
 # Netlify's Next.js runtime handles SSR, API routes, and the proxy (middleware).
 [[plugins]]
