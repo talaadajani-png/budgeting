@@ -3,8 +3,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePlaidLink, type PlaidLinkOnExit } from "react-plaid-link";
 
+// True when the page was loaded by Plaid redirecting back from an OAuth bank.
+function isOAuthRedirect() {
+  return (
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("oauth_state_id")
+  );
+}
+
 export default function LinkAccount({ onLinked }: { onLinked?: () => void }) {
-  const [linkToken, setLinkToken] = useState<string | null>(null);
+  // On an OAuth return, resume the in-progress Link session using the token we
+  // stashed before redirecting, rather than minting a fresh one.
+  const [linkToken, setLinkToken] = useState<string | null>(() =>
+    isOAuthRedirect() ? window.localStorage.getItem("plaid_link_token") : null
+  );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,15 +25,18 @@ export default function LinkAccount({ onLinked }: { onLinked?: () => void }) {
     try {
       const res = await fetch("/api/plaid/create-link-token", { method: "POST" });
       const data = await res.json();
-      if (data.link_token) setLinkToken(data.link_token);
-      else setError(data.error || "Could not create link token");
+      if (data.link_token) {
+        setLinkToken(data.link_token);
+        // Persist so we can resume the same Link session after an OAuth redirect.
+        window.localStorage.setItem("plaid_link_token", data.link_token);
+      } else setError(data.error || "Could not create link token");
     } catch {
       setError("Could not reach the server");
     }
   }, []);
 
   useEffect(() => {
-    fetchLinkToken();
+    if (!isOAuthRedirect()) fetchLinkToken();
   }, [fetchLinkToken]);
 
   const onSuccess = useCallback(
@@ -58,7 +73,18 @@ export default function LinkAccount({ onLinked }: { onLinked?: () => void }) {
     }
   }, []);
 
-  const { open, ready } = usePlaidLink({ token: linkToken, onSuccess, onExit });
+  const { open, ready } = usePlaidLink({
+    token: linkToken,
+    onSuccess,
+    onExit,
+    // On an OAuth return, hand Plaid the full redirect URL to complete the flow.
+    receivedRedirectUri: isOAuthRedirect() ? window.location.href : undefined,
+  });
+
+  // Auto-reopen Link to finish the OAuth handshake once it's ready.
+  useEffect(() => {
+    if (isOAuthRedirect() && ready) open();
+  }, [ready, open]);
 
   return (
     <div className="flex flex-col items-end gap-1">
