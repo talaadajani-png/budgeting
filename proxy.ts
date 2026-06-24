@@ -21,6 +21,7 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Protect everything except the login page, the auth endpoints, and static assets.
-  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+  // Protect everything except the login page, the auth + token-ingest endpoints,
+  // and static assets. /api/ingest guards itself with a bearer token.
+  matcher: ["/((?!login|api/auth|api/ingest|_next/static|_next/image|favicon.ico).*)"],
 };
