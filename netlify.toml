@@ -3,12 +3,6 @@
   # Must NOT be the repo root, or @netlify/plugin-nextjs rejects the deploy.
   publish = ".next"
 
-[build.environment]
-  # PLAID_ENV's value is "production" — a word that appears throughout Next.js
-  # framework files, causing false positives in Netlify's secret scanner.
-  # It is not a secret. The genuine secrets do NOT appear in build output.
-  SECRETS_SCAN_OMIT_KEYS = "PLAID_ENV"
-
 # Netlify's Next.js runtime handles SSR, API routes, and the proxy (middleware).
 [[plugins]]
   package = "@netlify/plugin-nextjs"

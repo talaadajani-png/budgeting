@@ -1,46 +1,43 @@
--- Budget & Finance Tracker schema (single-user).
--- Apply via the Supabase SQL editor, the Supabase MCP apply_migration tool, or psql.
+-- Budget & Finance Tracker schema (single-user, manual entry).
+-- Apply via the Supabase SQL editor. Safe to re-run: it drops and recreates the
+-- accounts/transactions tables (budgets are preserved).
+--
+-- This app is fully manual: you add accounts, upload bank statement CSVs, and
+-- add/edit transactions yourself. There is no bank-linking integration.
 
 create extension if not exists "pgcrypto";
 
--- One row per linked Plaid Item (an institution login).
-create table if not exists plaid_items (
-  id                  uuid primary key default gen_random_uuid(),
-  item_id             text unique not null,
-  access_token        text not null,
-  institution_name    text,
-  transactions_cursor text,
-  created_at          timestamptz not null default now()
+-- Order matters: drop dependents first. `cascade` clears the old Plaid FK too.
+drop table if exists transactions cascade;
+drop table if exists accounts cascade;
+drop table if exists plaid_items cascade;
+
+-- Bank / card / cash accounts you track.
+create table accounts (
+  id              uuid primary key default gen_random_uuid(),
+  name            text not null,
+  -- checking | savings | credit | loan | cash | investment
+  type            text not null default 'checking',
+  current_balance numeric not null default 0,
+  iso_currency    text not null default 'CAD',
+  created_at      timestamptz not null default now()
 );
 
--- Bank/card accounts belonging to a Plaid Item.
-create table if not exists accounts (
-  id                uuid primary key default gen_random_uuid(),
-  item_id           uuid not null references plaid_items(id) on delete cascade,
-  plaid_account_id  text unique not null,
-  name              text,
-  official_name     text,
-  type              text,
-  subtype           text,
-  current_balance   numeric,
-  available_balance numeric,
-  iso_currency      text,
-  created_at        timestamptz not null default now()
-);
-
--- Individual transactions. Plaid convention: positive amount = money out, negative = money in.
-create table if not exists transactions (
-  id                     uuid primary key default gen_random_uuid(),
-  account_id             uuid references accounts(id) on delete cascade,
-  plaid_account_id       text not null,
-  plaid_transaction_id   text unique not null,
-  amount                 numeric not null,
-  date                   date not null,
-  name                   text,
-  merchant_name          text,
-  category               text,
-  pending                boolean default false,
-  created_at             timestamptz not null default now()
+-- Individual transactions.
+-- Sign convention: positive amount = money OUT (spending), negative = money IN.
+create table transactions (
+  id            uuid primary key default gen_random_uuid(),
+  account_id    uuid references accounts(id) on delete cascade,
+  amount        numeric not null,
+  date          date not null,
+  name          text,
+  merchant_name text,
+  category      text,
+  pending       boolean not null default false,
+  -- Stable key derived from account+date+amount+name+occurrence, so re-uploading
+  -- an overlapping statement skips rows that were already imported.
+  dedupe_key    text unique,
+  created_at    timestamptz not null default now()
 );
 
 -- Monthly budget limits per category.
@@ -53,4 +50,4 @@ create table if not exists budgets (
 
 create index if not exists idx_transactions_date on transactions(date desc);
 create index if not exists idx_transactions_category on transactions(category);
-create index if not exists idx_accounts_item on accounts(item_id);
+create index if not exists idx_transactions_account on transactions(account_id);

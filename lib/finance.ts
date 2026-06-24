@@ -1,6 +1,6 @@
 import type { Account } from "./types";
 
-// Plaid account types that represent money you OWE (liabilities).
+// Account types that represent money you OWE (liabilities).
 const LIABILITY_TYPES = new Set(["credit", "loan"]);
 
 export function isLiability(account: Account): boolean {
@@ -13,8 +13,8 @@ export type Balances = {
   net: number; // have - owe
 };
 
-// For asset accounts Plaid reports a positive balance you hold.
-// For credit/loan accounts the `current` balance is the amount outstanding (owed).
+// For asset accounts the balance is money you hold.
+// For credit/loan accounts the balance is the amount outstanding (owed).
 export function computeBalances(accounts: Account[]): Balances {
   let have = 0;
   let owe = 0;
