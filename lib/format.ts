@@ -24,7 +24,7 @@ export function formatDate(dateStr: string): string {
   }).format(d);
 }
 
-// Human-readable category label from Plaid's UPPER_SNAKE primary category.
+// Human-readable category label (handles UPPER_SNAKE or free-text categories).
 export function prettyCategory(category: string | null): string {
   if (!category) return "Uncategorized";
   return category
