@@ -8,12 +8,11 @@ import TransactionEditor from "./TransactionEditor";
 import AccountEditor from "./AccountEditor";
 import SpendingChart from "./SpendingChart";
 import SpendingByCategory from "./SpendingByCategory";
-import NetWorthBox from "./NetWorthBox";
 import Amount from "./Amount";
 import PrivacyToggle from "./PrivacyToggle";
 import { ACCENTS, colorForIndex } from "@/lib/colors";
 import { formatDate, prettyCategory } from "@/lib/format";
-import { computeBalances, isLiability } from "@/lib/finance";
+import { isLiability } from "@/lib/finance";
 import type { Account, Transaction } from "@/lib/types";
 
 // One-tap starter accounts. Types are defaults — edit a card to change them.
@@ -101,8 +100,6 @@ export default function Dashboard() {
     }
   }, [accounts, load]);
 
-  const balances = useMemo(() => computeBalances(accounts), [accounts]);
-
   const filteredTx = useMemo(() => {
     if (activeAccount === "all") return transactions;
     return transactions.filter((t) => t.account_id === activeAccount);
@@ -171,7 +168,6 @@ export default function Dashboard() {
           {/* Left column — spending pie (hero) + compact net-worth box */}
           <section className="flex flex-col gap-4">
             <SpendingByCategory transactions={transactions} />
-            <NetWorthBox balances={balances} />
           </section>
 
           {/* Right column */}
