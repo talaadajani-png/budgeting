@@ -49,6 +49,29 @@ create table if not exists budgets (
   created_at    timestamptz not null default now()
 );
 
+-- Categories you can pick from when reviewing/labelling transactions.
+create table if not exists categories (
+  id         uuid primary key default gen_random_uuid(),
+  name       text unique not null,
+  created_at timestamptz not null default now()
+);
+
+-- Remembered vendor -> category mappings, learned as you approve categories
+-- during import review. vendor_key is the normalized merchant (see vendorKey()).
+create table if not exists vendor_rules (
+  id         uuid primary key default gen_random_uuid(),
+  vendor_key text unique not null,
+  category   text not null,
+  created_at timestamptz not null default now()
+);
+
+-- Sensible starter categories (no-op if they already exist).
+insert into categories (name) values
+  ('Groceries'), ('Dining'), ('Transport'), ('Shopping'), ('Subscriptions'),
+  ('Bills & Utilities'), ('Health'), ('Entertainment'), ('Travel'),
+  ('Income'), ('Transfers'), ('Fees'), ('Other')
+on conflict (name) do nothing;
+
 create index if not exists idx_transactions_date on transactions(date desc);
 create index if not exists idx_transactions_category on transactions(category);
 create index if not exists idx_transactions_account on transactions(account_id);

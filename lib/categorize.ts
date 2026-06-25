@@ -102,6 +102,32 @@ export const CATEGORY_RULES: Rule[] = [
   },
 ];
 
+// Statement noise we don't want in a vendor key (provinces, card networks, etc.).
+const VENDOR_NOISE = new Set([
+  "on", "qc", "bc", "ab", "mb", "sk", "ns", "nb", "pe", "nl", "yt", "nt", "nu",
+  "ca", "can", "canada", "usa", "us", "inc", "ltd", "llc", "co", "corp", "the",
+  "store", "purchase", "pos", "debit", "credit", "visa", "mastercard", "amex",
+  "interac", "payment", "to", "of", "www", "com", "ca",
+]);
+
+/**
+ * Derive a stable vendor key from a messy bank description, for remembering
+ * and matching vendor→category. Returns null if nothing meaningful remains.
+ * e.g. "LOBLAWS #1234 TORONTO ON" -> "loblaws", "TIM HORTONS #99" -> "tim hortons".
+ */
+export function vendorKey(text: string | null | undefined): string | null {
+  if (!text) return null;
+  let s = text.toLowerCase();
+  s = s.replace(/[#*].*$/g, " "); // drop trailing "#1234 …" / "*TRIP …"
+  s = s.replace(/\b\d[\d.,:/-]*\b/g, " "); // drop numbers/dates
+  s = s.replace(/[^a-z\s&]/g, " "); // keep letters, spaces, &
+  const words = s
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !VENDOR_NOISE.has(w));
+  if (words.length === 0) return null;
+  return words.slice(0, 2).join(" "); // first couple of significant words
+}
+
 /** Infer a category from a transaction description/merchant, or null if unknown. */
 export function categorizeTransaction(text: string | null | undefined): string | null {
   if (!text) return null;

@@ -25,6 +25,17 @@ export type Budget = {
   monthly_limit: number;
 };
 
+export type Category = {
+  id: string;
+  name: string;
+};
+
+export type VendorRule = {
+  id: string;
+  vendor_key: string;
+  category: string;
+};
+
 export const ACCOUNT_TYPES = [
   "checking",
   "savings",

@@ -22,6 +22,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -50,6 +51,14 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       setPending(false);
     }
   }, [open, tx, accounts]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategoryOptions((d.categories ?? []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, [open]);
 
   if (!open) return null;
 
@@ -183,7 +192,13 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
               onChange={(e) => setCategory(e.target.value)}
               className={inputClass}
               placeholder="e.g. Groceries"
+              list="tx-category-options"
             />
+            <datalist id="tx-category-options">
+              {categoryOptions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
             {(() => {
               const suggestion = categorizeTransaction(name);
               if (!suggestion || category.trim()) return null;

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { parseCsv, parseAmount, normalizeDate, guessColumn, type DateFormat } from "@/lib/csv";
 import { formatCurrency } from "@/lib/format";
 import type { Account } from "@/lib/types";
+import CategorizeReview from "./CategorizeReview";
 
 type Props = {
   open: boolean;
@@ -55,8 +56,8 @@ export default function ImportModal({ open, accounts, onClose, onImported }: Pro
   const [categoryCol, setCategoryCol] = useState(-1);
   const [spentSign, setSpentSign] = useState<"negative" | "positive">("negative");
   const [dateFmt, setDateFmt] = useState<DateFormat>("auto");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
   const [result, setResult] = useState<{ imported: number; skipped: number; total: number } | null>(null);
 
   const headers = useMemo(() => {
@@ -125,7 +126,24 @@ export default function ImportModal({ open, accounts, onClose, onImported }: Pro
 
   if (!open) return null;
 
-  async function doImport() {
+  // Hand off to the swipe-to-categorize review step; it commits the import.
+  if (reviewing) {
+    return (
+      <CategorizeReview
+        open
+        accountId={accountId}
+        items={built}
+        onBack={() => setReviewing(false)}
+        onDone={(r) => {
+          setReviewing(false);
+          setResult(r);
+          onImported();
+        }}
+      />
+    );
+  }
+
+  function startReview() {
     if (!accountId) {
       setError("Choose which account this statement belongs to.");
       return;
@@ -134,23 +152,8 @@ export default function ImportModal({ open, accounts, onClose, onImported }: Pro
       setError("No valid rows — check your column mapping below.");
       return;
     }
-    setBusy(true);
     setError(null);
-    try {
-      const res = await fetch("/api/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ account_id: accountId, transactions: built }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Import failed");
-      setResult({ imported: data.imported, skipped: data.skipped, total: data.total });
-      onImported();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Import failed");
-    } finally {
-      setBusy(false);
-    }
+    setReviewing(true);
   }
 
   function reset() {
@@ -358,11 +361,11 @@ export default function ImportModal({ open, accounts, onClose, onImported }: Pro
 
             <div className="flex justify-end">
               <button
-                onClick={doImport}
-                disabled={busy || built.length === 0}
+                onClick={startReview}
+                disabled={built.length === 0}
                 className="rounded-full bg-[#1A1A1A] text-white px-6 py-2.5 text-sm font-medium disabled:opacity-50 hover:opacity-90 transition"
               >
-                {busy ? "Importing…" : `Import ${built.length} transactions`}
+                Review &amp; categorize {built.length} →
               </button>
             </div>
           </div>
