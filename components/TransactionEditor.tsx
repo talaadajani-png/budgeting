@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Account, Transaction } from "@/lib/types";
+import { categorizeTransaction } from "@/lib/categorize";
 
 type Props = {
   open: boolean;
@@ -183,6 +184,19 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
               className={inputClass}
               placeholder="e.g. Groceries"
             />
+            {(() => {
+              const suggestion = categorizeTransaction(name);
+              if (!suggestion || category.trim()) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setCategory(suggestion)}
+                  className="mt-1.5 rounded-full bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 px-3 py-1 text-xs font-medium transition"
+                >
+                  Suggested: {suggestion} — tap to use
+                </button>
+              );
+            })()}
           </label>
 
           <label className="block">
