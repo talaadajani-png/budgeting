@@ -125,6 +125,12 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <PrivacyToggle />
           <Link
+            href="/categories"
+            className="rounded-full bg-[#FBF9F4] px-4 py-2.5 text-sm font-medium hover:bg-white transition"
+          >
+            Categories
+          </Link>
+          <Link
             href="/budgets"
             className="rounded-full bg-[#FBF9F4] px-4 py-2.5 text-sm font-medium hover:bg-white transition"
           >

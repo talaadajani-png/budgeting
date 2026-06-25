@@ -119,7 +119,12 @@ export default function Budgets() {
         <Link href="/" className="text-sm font-medium hover:opacity-70">
           ← Back to dashboard
         </Link>
-        <PrivacyToggle />
+        <div className="flex items-center gap-4">
+          <Link href="/categories" className="text-sm font-medium hover:opacity-70">
+            Manage categories
+          </Link>
+          <PrivacyToggle />
+        </div>
       </header>
 
       <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-6">
