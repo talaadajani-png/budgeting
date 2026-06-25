@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { categorizeTransaction } from "./categorize";
 
 // Internal sign convention: positive amount = money OUT (spending), negative = money IN.
 export type IncomingTx = {
@@ -31,18 +32,24 @@ export async function importTransactions(
     const date = String(t.date ?? "").trim();
     if (!date || !Number.isFinite(amount)) continue;
     const name = t.name != null ? String(t.name).trim() : "";
+    const merchant = t.merchant_name != null ? String(t.merchant_name).trim() : "";
 
     const base = `${date}|${amount.toFixed(2)}|${name.slice(0, 80)}`;
     const occurrence = seen.get(base) ?? 0;
     seen.set(base, occurrence + 1);
+
+    // Keep any category supplied by the statement; otherwise auto-categorize
+    // from the description / merchant.
+    const provided = t.category != null ? String(t.category).trim() : "";
+    const category = provided || categorizeTransaction(name || merchant);
 
     rows.push({
       account_id: accountId,
       amount,
       date,
       name: name || null,
-      merchant_name: t.merchant_name != null ? String(t.merchant_name).trim() || null : null,
-      category: t.category != null ? String(t.category).trim() || null : null,
+      merchant_name: merchant || null,
+      category: category || null,
       pending: Boolean(t.pending),
       dedupe_key: makeDedupeKey(accountId, date, amount, name, occurrence),
     });

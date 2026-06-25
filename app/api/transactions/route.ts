@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase";
+import { categorizeTransaction } from "@/lib/categorize";
 
 export const runtime = "nodejs";
 
@@ -27,13 +28,17 @@ function buildRow(body: Record<string, unknown>) {
   const date = String(body.date ?? "").trim();
   if (!date || !Number.isFinite(amount)) return null;
   const name = body.name != null ? String(body.name).trim() : null;
+  const merchant = body.merchant_name != null ? String(body.merchant_name).trim() : null;
+  const providedCategory = body.category != null ? String(body.category).trim() : "";
+  const category = providedCategory || categorizeTransaction(name || merchant);
   return {
     account_id: body.account_id ? String(body.account_id) : null,
     amount,
     date,
     name: name || null,
-    merchant_name: body.merchant_name != null ? String(body.merchant_name).trim() || null : null,
-    category: body.category != null ? String(body.category).trim() || null : null,
+    merchant_name: merchant || null,
+    category: category || null,
+    notes: body.notes != null ? String(body.notes).trim() || null : null,
     pending: Boolean(body.pending),
   };
 }
@@ -68,6 +73,7 @@ export async function PATCH(req: Request) {
     if (body.merchant_name !== undefined)
       updates.merchant_name = body.merchant_name != null ? String(body.merchant_name).trim() || null : null;
     if (body.category !== undefined) updates.category = body.category != null ? String(body.category).trim() || null : null;
+    if (body.notes !== undefined) updates.notes = body.notes != null ? String(body.notes).trim() || null : null;
     if (body.pending !== undefined) updates.pending = Boolean(body.pending);
 
     const db = getSupabaseAdmin();

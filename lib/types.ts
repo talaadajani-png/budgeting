@@ -14,6 +14,7 @@ export type Transaction = {
   name: string | null;
   merchant_name: string | null;
   category: string | null;
+  notes: string | null;
   pending: boolean | null;
   accounts?: { name: string | null } | null;
 };
@@ -22,6 +23,17 @@ export type Budget = {
   id: string;
   category: string;
   monthly_limit: number;
+};
+
+export type Category = {
+  id: string;
+  name: string;
+};
+
+export type VendorRule = {
+  id: string;
+  vendor_key: string;
+  category: string;
 };
 
 export const ACCOUNT_TYPES = [

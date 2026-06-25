@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Account, Transaction } from "@/lib/types";
+import { categorizeTransaction } from "@/lib/categorize";
 
 type Props = {
   open: boolean;
@@ -21,6 +22,8 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +38,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       setAmount(String(Math.abs(tx.amount)));
       setName(tx.name ?? "");
       setCategory(tx.category ?? "");
+      setNotes(tx.notes ?? "");
       setPending(Boolean(tx.pending));
     } else {
       setAccountId(accounts[0]?.id ?? "");
@@ -43,9 +47,18 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       setAmount("");
       setName("");
       setCategory("");
+      setNotes("");
       setPending(false);
     }
   }, [open, tx, accounts]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategoryOptions((d.categories ?? []).map((c: { name: string }) => c.name)))
+      .catch(() => {});
+  }, [open]);
 
   if (!open) return null;
 
@@ -64,6 +77,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       amount: direction === "out" ? abs : -abs,
       name: name.trim() || null,
       category: category.trim() || null,
+      notes: notes.trim() || null,
       pending,
     };
     try {
@@ -178,6 +192,36 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
               onChange={(e) => setCategory(e.target.value)}
               className={inputClass}
               placeholder="e.g. Groceries"
+              list="tx-category-options"
+            />
+            <datalist id="tx-category-options">
+              {categoryOptions.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+            {(() => {
+              const suggestion = categorizeTransaction(name);
+              if (!suggestion || category.trim()) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => setCategory(suggestion)}
+                  className="mt-1.5 rounded-full bg-[#1A1A1A]/5 hover:bg-[#1A1A1A]/10 px-3 py-1 text-xs font-medium transition"
+                >
+                  Suggested: {suggestion} — tap to use
+                </button>
+              );
+            })()}
+          </label>
+
+          <label className="block">
+            <span className="text-xs text-[#1A1A1A]/50">Notes</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className={`${inputClass} resize-y`}
+              placeholder="Optional note — e.g. split with roommate, reimbursable…"
             />
           </label>
 

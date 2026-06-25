@@ -3,6 +3,16 @@
   # Must NOT be the repo root, or @netlify/plugin-nextjs rejects the deploy.
   publish = ".next"
 
+[build.environment]
+  # Stale Plaid env vars are still configured in the Netlify UI even though the
+  # app no longer uses them. Their values are common words ("production", "US",
+  # a redirect URL) that appear throughout Next.js framework files, causing
+  # false positives in Netlify's secret scanner. The app's genuine secrets
+  # (SUPABASE_*, SESSION_SECRET, APP_PASSWORD_HASH, INGEST_TOKEN) do NOT appear
+  # in build output and remain scanned. Best long-term fix: delete these vars
+  # from Netlify → Site settings → Environment variables.
+  SECRETS_SCAN_OMIT_KEYS = "PLAID_CLIENT_ID,PLAID_SECRET,PLAID_ENV,PLAID_COUNTRY_CODES,PLAID_REDIRECT_URI"
+
 # Netlify's Next.js runtime handles SSR, API routes, and the proxy (middleware).
 [[plugins]]
   package = "@netlify/plugin-nextjs"

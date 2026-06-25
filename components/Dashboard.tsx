@@ -16,6 +16,15 @@ import { formatDate, prettyCategory } from "@/lib/format";
 import { computeBalances, isLiability } from "@/lib/finance";
 import type { Account, Transaction } from "@/lib/types";
 
+// One-tap starter accounts. Types are defaults — edit a card to change them.
+// credit = money owed (Amex cards), the rest are assets.
+const SETUP_ACCOUNTS: { name: string; type: string }[] = [
+  { name: "Amex", type: "credit" },
+  { name: "Scotia", type: "checking" },
+  { name: "Wealthsimple", type: "cash" },
+  { name: "Amex (baba)", type: "credit" },
+];
+
 export default function Dashboard() {
   const router = useRouter();
   const [accounts, setAccounts] = useState<Account[]>([]);
@@ -28,6 +37,7 @@ export default function Dashboard() {
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [acctEditorOpen, setAcctEditorOpen] = useState(false);
   const [editingAcct, setEditingAcct] = useState<Account | null>(null);
+  const [seeding, setSeeding] = useState(false);
 
   const load = useCallback(async () => {
     const [a, t] = await Promise.all([
@@ -66,6 +76,31 @@ export default function Dashboard() {
     setAcctEditorOpen(true);
   }
 
+  // Create the starter accounts that don't already exist (matched by name,
+  // case-insensitive), so this is safe to click more than once.
+  const seedAccounts = useCallback(async () => {
+    setSeeding(true);
+    try {
+      const existing = new Set(accounts.map((a) => (a.name ?? "").trim().toLowerCase()));
+      const missing = SETUP_ACCOUNTS.filter((s) => !existing.has(s.name.toLowerCase()));
+      for (const acct of missing) {
+        await fetch("/api/accounts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: acct.name,
+            type: acct.type,
+            current_balance: 0,
+            iso_currency: "CAD",
+          }),
+        });
+      }
+      await load();
+    } finally {
+      setSeeding(false);
+    }
+  }, [accounts, load]);
+
   const balances = useMemo(() => computeBalances(accounts), [accounts]);
 
   const filteredTx = useMemo(() => {
@@ -89,6 +124,12 @@ export default function Dashboard() {
         </div>
         <div className="flex items-center gap-2">
           <PrivacyToggle />
+          <Link
+            href="/categories"
+            className="rounded-full bg-[#FBF9F4] px-4 py-2.5 text-sm font-medium hover:bg-white transition"
+          >
+            Categories
+          </Link>
           <Link
             href="/budgets"
             className="rounded-full bg-[#FBF9F4] px-4 py-2.5 text-sm font-medium hover:bg-white transition"
@@ -142,17 +183,35 @@ export default function Dashboard() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-lg font-semibold">Accounts</h2>
-                <button
-                  onClick={openNewAccount}
-                  className="rounded-full bg-[#1A1A1A] text-white px-4 py-1.5 text-xs font-medium hover:opacity-90 transition"
-                >
-                  + Add account
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={seedAccounts}
+                    disabled={seeding}
+                    className="rounded-full bg-white border border-[#1A1A1A]/10 text-[#1A1A1A] px-4 py-1.5 text-xs font-medium hover:bg-[#1A1A1A]/5 transition disabled:opacity-50"
+                  >
+                    {seeding ? "Setting up…" : "Set up my banks"}
+                  </button>
+                  <button
+                    onClick={openNewAccount}
+                    className="rounded-full bg-[#1A1A1A] text-white px-4 py-1.5 text-xs font-medium hover:opacity-90 transition"
+                  >
+                    + Add account
+                  </button>
+                </div>
               </div>
               {accounts.length === 0 ? (
                 <div className="bg-[#FBF9F4] rounded-3xl p-6 text-sm text-[#1A1A1A]/50">
-                  No accounts yet. Click “Add account” to create one, then import a
-                  statement or add transactions.
+                  <p>No accounts yet.</p>
+                  <button
+                    onClick={seedAccounts}
+                    disabled={seeding}
+                    className="mt-3 rounded-full bg-[#1A1A1A] text-white px-5 py-2 text-sm font-medium hover:opacity-90 transition disabled:opacity-50"
+                  >
+                    {seeding ? "Setting up…" : "Set up my banks (Amex, Scotia, Wealthsimple, Amex baba)"}
+                  </button>
+                  <p className="mt-3 text-[#1A1A1A]/40">
+                    Or click “Add account” to create one manually, then import a statement.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -254,6 +313,11 @@ export default function Dashboard() {
                             </td>
                             <td className="py-3 pr-4 max-w-[200px] truncate">
                               {t.merchant_name || t.name || "—"}
+                              {t.notes && (
+                                <span className="ml-1.5 text-[#1A1A1A]/30" title={t.notes}>
+                                  📝
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 pr-4 text-[#1A1A1A]/60">{prettyCategory(t.category)}</td>
                             <td
