@@ -33,6 +33,7 @@ create table transactions (
   name          text,
   merchant_name text,
   category      text,
+  notes         text,
   pending       boolean not null default false,
   -- Stable key derived from account+date+amount+name+occurrence, so re-uploading
   -- an overlapping statement skips rows that were already imported.

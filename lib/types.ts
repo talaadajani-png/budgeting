@@ -14,6 +14,7 @@ export type Transaction = {
   name: string | null;
   merchant_name: string | null;
   category: string | null;
+  notes: string | null;
   pending: boolean | null;
   accounts?: { name: string | null } | null;
 };

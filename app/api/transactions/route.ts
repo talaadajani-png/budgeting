@@ -34,6 +34,7 @@ function buildRow(body: Record<string, unknown>) {
     name: name || null,
     merchant_name: body.merchant_name != null ? String(body.merchant_name).trim() || null : null,
     category: body.category != null ? String(body.category).trim() || null : null,
+    notes: body.notes != null ? String(body.notes).trim() || null : null,
     pending: Boolean(body.pending),
   };
 }
@@ -68,6 +69,7 @@ export async function PATCH(req: Request) {
     if (body.merchant_name !== undefined)
       updates.merchant_name = body.merchant_name != null ? String(body.merchant_name).trim() || null : null;
     if (body.category !== undefined) updates.category = body.category != null ? String(body.category).trim() || null : null;
+    if (body.notes !== undefined) updates.notes = body.notes != null ? String(body.notes).trim() || null : null;
     if (body.pending !== undefined) updates.pending = Boolean(body.pending);
 
     const db = getSupabaseAdmin();

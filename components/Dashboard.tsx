@@ -21,7 +21,7 @@ import type { Account, Transaction } from "@/lib/types";
 const SETUP_ACCOUNTS: { name: string; type: string }[] = [
   { name: "Amex", type: "credit" },
   { name: "Scotia", type: "checking" },
-  { name: "Wealthsimple", type: "investment" },
+  { name: "Wealthsimple", type: "cash" },
   { name: "Amex (baba)", type: "credit" },
 ];
 
@@ -307,6 +307,11 @@ export default function Dashboard() {
                             </td>
                             <td className="py-3 pr-4 max-w-[200px] truncate">
                               {t.merchant_name || t.name || "—"}
+                              {t.notes && (
+                                <span className="ml-1.5 text-[#1A1A1A]/30" title={t.notes}>
+                                  📝
+                                </span>
+                              )}
                             </td>
                             <td className="py-3 pr-4 text-[#1A1A1A]/60">{prettyCategory(t.category)}</td>
                             <td

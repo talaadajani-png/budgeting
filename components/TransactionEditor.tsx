@@ -21,6 +21,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
   const [amount, setAmount] = useState("");
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
+  const [notes, setNotes] = useState("");
   const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       setAmount(String(Math.abs(tx.amount)));
       setName(tx.name ?? "");
       setCategory(tx.category ?? "");
+      setNotes(tx.notes ?? "");
       setPending(Boolean(tx.pending));
     } else {
       setAccountId(accounts[0]?.id ?? "");
@@ -43,6 +45,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       setAmount("");
       setName("");
       setCategory("");
+      setNotes("");
       setPending(false);
     }
   }, [open, tx, accounts]);
@@ -64,6 +67,7 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
       amount: direction === "out" ? abs : -abs,
       name: name.trim() || null,
       category: category.trim() || null,
+      notes: notes.trim() || null,
       pending,
     };
     try {
@@ -178,6 +182,17 @@ export default function TransactionEditor({ open, tx, accounts, onClose, onSaved
               onChange={(e) => setCategory(e.target.value)}
               className={inputClass}
               placeholder="e.g. Groceries"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs text-[#1A1A1A]/50">Notes</span>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              className={`${inputClass} resize-y`}
+              placeholder="Optional note — e.g. split with roommate, reimbursable…"
             />
           </label>
 
